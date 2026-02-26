@@ -1563,6 +1563,31 @@ vo_dev_id = 3 ; 0 is hdmi, 3 is mipi
 enable_npu = 1
 ```
 
+#### RK3588 上车载AVM全景拼接配置建议
+
+RK3588 车载AVM（Around View Monitor）通常采用 4 路鱼眼相机输入，对应 `rk3588_multi_ipc` 的 4 路拼接配置。建议基于 `src/rk3588_multi_ipc/rkipc-4x.ini` 调整，关键参数如下：
+
+- `sensor_num = 4`：4 路环视相机。
+- `param_source = 0` + `calib_file_path`：优先使用标定文件（CALIB）完成几何矫正和拼接。
+- `projection_mode = 0`、`fov_x = 36000`：常用于环视全景输出。
+- `center_x` / `center_y`：决定拼接投影中心，建议与输出分辨率中心匹配后再微调。
+- `stitch_distance`：拼接距离调优参数，建议在实车环境（近景/中景/远景）下分场景调试。
+
+推荐调试流程：
+
+1. **先完成相机内外参与畸变标定**，确认 `calib_file_path` 指向有效标定文件。
+2. **先固定输出分辨率**（如 `avs_width` / `avs_height`），再调整投影与中心参数，避免多个变量同时变化。
+3. **优先检查接缝区域**（车头、车尾、两侧轮眉附近），通过 `stitch_distance` 和标定参数迭代优化。
+4. **打开VO本地预览**（`enable_vo = 1`）进行路测观察，稳定后再开启推流参数优化。
+
+典型启动方式：
+
+```bash
+RkLunch.sh rk3588_multi_ipc
+```
+
+如果项目使用自定义 AVM ini，可在 `rk3588_multi_ipc` 目录中替换默认 ini（或在脚本中指定目标配置）后启动。
+
 ### 网络模块
 
 ```ini
@@ -1571,4 +1596,3 @@ enable = 1 ; 是否使能网络时间同步
 refresh_time_s = 60 ; ntp刷新时间，单位秒
 ntp_server = 119.28.183.184 ; ntp服务器地址
 ```
-
